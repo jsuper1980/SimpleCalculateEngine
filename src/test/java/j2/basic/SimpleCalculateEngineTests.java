@@ -216,7 +216,10 @@ public class SimpleCalculateEngineTests {
 
     engine.setCellValue("J1", "=sin(π/2)");
     System.out.println("sin(π/2) = " + engine.getCellValue("J1"));
-    assertEquals(1.0, Double.parseDouble(engine.getCellValue("J1")), 1e-10);
+    assertEquals(1.0, Double.parseDouble(engine.getCellValue("J1")));
+    engine.setCellValue("J1_1", "=sin(90*π/180)");
+    System.out.println("sin(90°) = " + engine.getCellValue("J1_1"));
+    assertEquals(1.0, Double.parseDouble(engine.getCellValue("J1_1")));
 
     engine.setCellValue("J2", "=cos(0)");
     System.out.println("cos(0) = " + engine.getCellValue("J2"));
