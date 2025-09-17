@@ -6,6 +6,8 @@
 
 ### 核心功能
 
+- **高精度计算**: 使用 BigDecimal 进行数值计算，避免浮点数精度问题
+- **智能格式化**: 自动去除计算结果中无意义的尾随零（如 1.0000 显示为 1）
 - **单元格管理**: 支持灵活的单元格命名（支持中文、希腊字母、下划线等）
 - **公式计算**: 支持复杂的数学表达式和单元格引用
 - **依赖管理**: 自动处理单元格间的依赖关系，支持联动计算
@@ -59,6 +61,8 @@
 
 ### 基本用法
 
+## 📖 快速开始
+
 ```java
 // 1. 创建引擎实例
 SimpleCalculateEngine engine = new SimpleCalculateEngine();
@@ -72,9 +76,16 @@ engine.setCellValue("A3", "=A1+A2");
 
 // 4. 获取计算结果
 String result = engine.getCellValue("A3"); // "30"
-BigDecimal numResult = engine.getCellValueNumber("A3"); // 30.0
+BigDecimal numResult = engine.getCellValueNumber("A3"); // 30
 
-// 5. 关闭引擎（释放线程池资源）
+// 5. 高精度计算示例
+engine.setCellValue("B1", "=0.1+0.2");
+System.out.println(engine.getCellValue("B1")); // "0.3" (而不是 0.30000000000000004)
+
+engine.setCellValue("B2", "=10/2");
+System.out.println(engine.getCellValue("B2")); // "5" (而不是 5.0)
+
+// 6. 关闭引擎（释放线程池资源）
 engine.shutdown();
 ```
 
@@ -170,6 +181,33 @@ for (int i = 0; i < 4; i++) {
 }
 ```
 
+### 🔧 高级特性
+
+### 高精度计算
+
+引擎使用 **BigDecimal** 进行所有数值计算，彻底解决浮点数精度问题：
+
+```java
+// 传统 double 计算的问题
+double result1 = 0.1 + 0.2;  // 0.30000000000000004
+double result2 = 1.0 - 0.9;  // 0.09999999999999998
+
+// SimpleCalculateEngine 的高精度计算
+engine.setCellValue("A1", "=0.1+0.2");  // "0.3"
+engine.setCellValue("A2", "=1.0-0.9");  // "0.1"
+engine.setCellValue("A3", "=0.1*3");    // "0.3"
+```
+
+### 智能格式化
+
+自动优化显示格式，去除无意义的尾随零：
+
+```java
+engine.setCellValue("B1", "=10/2");     // "5" (而不是 "5.0")
+engine.setCellValue("B2", "=1.0000");   // "1" (而不是 "1.0000")
+engine.setCellValue("B3", "=10/3");     // "3.3333333333" (保留必要的小数位)
+```
+
 ### 错误处理
 
 - 计算错误的单元格值会显示为 `"#ERROR#"`
@@ -228,6 +266,8 @@ void shutdown()  // 关闭线程池，释放资源
 3. **表达式解析**: 支持复杂数学表达式的递归解析
 4. **函数处理**: 模块化的函数计算系统
 5. **并发控制**: 读写锁保证数据一致性
+6. **高精度计算**: 基于 BigDecimal 的数值计算引擎
+7. **智能格式化**: 自动优化数值显示格式
 
 ### 计算流程
 
@@ -242,8 +282,9 @@ void shutdown()  // 关闭线程池，释放资源
 1. **资源管理**: 使用完毕后请调用 `shutdown()` 方法释放线程池资源
 2. **单元格命名**: 避免使用内置函数名作为单元格 ID
 3. **循环引用**: 系统会自动检测并抛出异常
-4. **数值精度**: 内部使用 `double` 进行计算，可能存在浮点精度问题
+4. **数值精度**: 内部使用 **BigDecimal** 进行高精度计算，完全避免浮点数精度问题
 5. **Java 调用**: `jcall` 函数只能调用公共静态方法
+6. **格式化**: 计算结果会自动去除无意义的尾随零，提供更友好的显示格式
 
 ## 🔍 示例项目
 

@@ -2,6 +2,7 @@ package j2.basic;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -232,6 +233,22 @@ public class SimpleCalculateEngine {
    */
   public void setCellValue(String cellId, double value) {
     setCellValue(cellId, String.valueOf(value));
+  }
+
+  /**
+   * 格式化BigDecimal，去除无意义的零
+   * 例如：1.0000 -> 1, 1.2300 -> 1.23, 0.0 -> 0
+   */
+  private String formatBigDecimal(BigDecimal value) {
+    if (value == null) {
+      return null;
+    }
+    
+    // 使用stripTrailingZeros去除尾随零，然后转换为字符串
+    BigDecimal stripped = value.stripTrailingZeros();
+    
+    // 如果结果的scale为负数（如1E+2），使用toPlainString()避免科学计数法
+    return stripped.scale() < 0 ? stripped.toPlainString() : stripped.toString();
   }
 
   /**
@@ -496,9 +513,9 @@ public class SimpleCalculateEngine {
     try {
       String formula = content.substring(1); // 去除等号
       String evaluatedFormula = replaceCellReferencesWithValues(formula);
-      double result = evaluateExpression(evaluatedFormula);
+      BigDecimal result = evaluateExpression(evaluatedFormula);
       synchronized (cell) {
-        cell.setCalculatedValue(String.valueOf(result));
+        cell.setCalculatedValue(formatBigDecimal(result));
       }
     } catch (Exception e) {
       synchronized (cell) {
@@ -536,7 +553,7 @@ public class SimpleCalculateEngine {
   /**
    * 计算表达式的值（简化版）
    */
-  private double evaluateExpression(String expression) {
+  private BigDecimal evaluateExpression(String expression) {
     try {
       return evaluateSimpleExpression(expression.trim());
     } catch (Exception e) {
@@ -550,9 +567,10 @@ public class SimpleCalculateEngine {
    * 运算符优先级：^ > *, / > +, -
    * 支持函数：sqrt, abs, ceil, floor, round, sin, cos, tan, asin, acos, atan, log, log10, exp
    */
-  private double evaluateSimpleExpression(String expression) {
-    // 函数已经在replaceCellReferencesWithValues中处理过了，这里直接计算表达式
-    return evaluateSimpleExpressionWithoutFunctions(expression);
+  private BigDecimal evaluateSimpleExpression(String expression) {
+    // 处理数学函数
+    String processedExpression = processMathFunctions(expression);
+    return evaluateSimpleExpressionWithoutFunctions(processedExpression);
   }
 
   /**
@@ -612,11 +630,11 @@ public class SimpleCalculateEngine {
           // 特殊处理jcall函数
           if ("jcall".equals(functionName)) {
             // jcall函数需要特殊处理，前两个参数是字符串
-            double result = processJavaCall(arguments);
+            BigDecimal result = processJavaCall(arguments);
             expression = expression.substring(0, functionStart) + result + expression.substring(closeParen);
           } else {
             // 处理每个参数中的单元格引用
-            double[] argValues = new double[arguments.length];
+            BigDecimal[] argValues = new BigDecimal[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
               String arg = arguments[i].trim();
 
@@ -644,7 +662,7 @@ public class SimpleCalculateEngine {
             }
 
             // 计算函数结果
-            double result = calculateMathFunction(functionName, argValues);
+            BigDecimal result = calculateMathFunction(functionName, argValues);
 
             // 替换函数调用为计算结果
             expression = expression.substring(0, functionStart) + result + expression.substring(closeParen);
@@ -707,7 +725,7 @@ public class SimpleCalculateEngine {
    * @param arguments 参数数组，第一个是类名，第二个是方法名，后续是方法参数
    * @return 调用结果
    */
-  private double processJavaCall(String[] arguments) {
+  private BigDecimal processJavaCall(String[] arguments) {
     if (arguments.length < 2) {
       throw new RuntimeException("jcall函数需要至少2个参数（类名和方法名）");
     }
@@ -752,13 +770,14 @@ public class SimpleCalculateEngine {
         } else {
           // 数值参数
           try {
-            double value = evaluateSimpleExpressionWithoutFunctions(finalArgument);
+            BigDecimal value = evaluateSimpleExpressionWithoutFunctions(finalArgument);
             // 尝试转换为整数
-            if (value == (int) value) {
-              methodArgs[i - 2] = (int) value;
+            if (value.scale() == 0 && value.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) <= 0 && 
+                value.compareTo(BigDecimal.valueOf(Integer.MIN_VALUE)) >= 0) {
+              methodArgs[i - 2] = value.intValue();
               paramTypes[i - 2] = int.class;
             } else {
-              methodArgs[i - 2] = value;
+              methodArgs[i - 2] = value.doubleValue();
               paramTypes[i - 2] = double.class;
             }
           } catch (Exception e) {
@@ -801,21 +820,21 @@ public class SimpleCalculateEngine {
       // 调用方法
       Object result = method.invoke(null, methodArgs);
 
-      // 转换返回值为double
+      // 转换返回值为BigDecimal
       if (result instanceof Number) {
-        return ((Number) result).doubleValue();
+        return BigDecimal.valueOf(((Number) result).doubleValue());
       } else if (result instanceof String) {
         try {
-          return Double.parseDouble((String) result);
+          return new BigDecimal((String) result);
         } catch (NumberFormatException e) {
           // 如果字符串无法转换为数值，返回字符串长度
-          return ((String) result).length();
+          return BigDecimal.valueOf(((String) result).length());
         }
       } else if (result instanceof Boolean) {
-        return ((Boolean) result) ? 1.0 : 0.0;
+        return ((Boolean) result) ? BigDecimal.ONE : BigDecimal.ZERO;
       } else {
         // 其他类型返回0
-        return 0.0;
+        return BigDecimal.ZERO;
       }
 
     } catch (Exception e) {
@@ -860,7 +879,7 @@ public class SimpleCalculateEngine {
   /**
    * 不处理函数的简单表达式计算器（避免递归）
    */
-  private double evaluateSimpleExpressionWithoutFunctions(String expression) {
+  private BigDecimal evaluateSimpleExpressionWithoutFunctions(String expression) {
     // 移除空格
     expression = expression.replaceAll("\\s+", "");
 
@@ -873,7 +892,7 @@ public class SimpleCalculateEngine {
       }
 
       String subExpr = expression.substring(start + 1, end);
-      double subResult = evaluateSimpleExpressionWithoutFunctions(subExpr);
+      BigDecimal subResult = evaluateSimpleExpressionWithoutFunctions(subExpr);
       expression = expression.substring(0, start) + subResult + expression.substring(end + 1);
     }
 
@@ -886,9 +905,9 @@ public class SimpleCalculateEngine {
         if (Character.isDigit(prev) || prev == ')') {
           String left = expression.substring(0, i);
           String right = expression.substring(i + 1);
-          double leftVal = evaluateSimpleExpressionWithoutFunctions(left);
-          double rightVal = evaluateSimpleExpressionWithoutFunctions(right);
-          return c == '+' ? leftVal + rightVal : leftVal - rightVal;
+          BigDecimal leftVal = evaluateSimpleExpressionWithoutFunctions(left);
+          BigDecimal rightVal = evaluateSimpleExpressionWithoutFunctions(right);
+          return c == '+' ? leftVal.add(rightVal) : leftVal.subtract(rightVal);
         }
       }
     }
@@ -899,12 +918,12 @@ public class SimpleCalculateEngine {
       if ((c == '*' || c == '/') && i > 0) {
         String left = expression.substring(0, i);
         String right = expression.substring(i + 1);
-        double leftVal = evaluateSimpleExpressionWithoutFunctions(left);
-        double rightVal = evaluateSimpleExpressionWithoutFunctions(right);
-        if (c == '/' && rightVal == 0) {
+        BigDecimal leftVal = evaluateSimpleExpressionWithoutFunctions(left);
+        BigDecimal rightVal = evaluateSimpleExpressionWithoutFunctions(right);
+        if (c == '/' && rightVal.compareTo(BigDecimal.ZERO) == 0) {
           throw new RuntimeException("除零错误");
         }
-        return c == '*' ? leftVal * rightVal : leftVal / rightVal;
+        return c == '*' ? leftVal.multiply(rightVal) : leftVal.divide(rightVal, 10, RoundingMode.HALF_UP);
       }
     }
 
@@ -914,20 +933,20 @@ public class SimpleCalculateEngine {
       if (c == '^' && i > 0) {
         String left = expression.substring(0, i);
         String right = expression.substring(i + 1);
-        double leftVal = evaluateSimpleExpressionWithoutFunctions(left);
-        double rightVal = evaluateSimpleExpressionWithoutFunctions(right);
-        return Math.pow(leftVal, rightVal);
+        BigDecimal leftVal = evaluateSimpleExpressionWithoutFunctions(left);
+        BigDecimal rightVal = evaluateSimpleExpressionWithoutFunctions(right);
+        return BigDecimal.valueOf(Math.pow(leftVal.doubleValue(), rightVal.doubleValue()));
       }
     }
 
     // 处理负号
     if (expression.startsWith("-")) {
-      return -evaluateSimpleExpressionWithoutFunctions(expression.substring(1));
+      return evaluateSimpleExpressionWithoutFunctions(expression.substring(1)).negate();
     }
 
     // 解析数字
     try {
-      return Double.parseDouble(expression);
+      return new BigDecimal(expression);
     } catch (NumberFormatException e) {
       throw new RuntimeException("无法解析数字: " + expression);
     }
@@ -936,7 +955,7 @@ public class SimpleCalculateEngine {
   /**
    * 计算具体的数学函数
    */
-  private double calculateMathFunction(String functionName, double[] values) {
+  private BigDecimal calculateMathFunction(String functionName, BigDecimal[] values) {
     // 对于单参数函数，保持向后兼容
     if (values.length == 1) {
       return calculateMathFunction(functionName, values[0]);
@@ -947,10 +966,9 @@ public class SimpleCalculateEngine {
       case "round":
         if (values.length == 2) {
           // round(value, digits) - 保留指定位数小数
-          double value = values[0];
-          int digits = (int) values[1];
-          double scale = Math.pow(10, digits);
-          return Math.round(value * scale) / scale;
+          BigDecimal value = values[0];
+          int digits = values[1].intValue();
+          return value.setScale(digits, RoundingMode.HALF_UP);
         } else {
           throw new RuntimeException("round函数需要1或2个参数，实际参数个数: " + values.length);
         }
@@ -958,7 +976,7 @@ public class SimpleCalculateEngine {
       case "pow":
         if (values.length == 2) {
           // pow(base, exponent) - 幂运算
-          return Math.pow(values[0], values[1]);
+          return BigDecimal.valueOf(Math.pow(values[0].doubleValue(), values[1].doubleValue()));
         } else {
           throw new RuntimeException("pow函数需要2个参数，实际参数个数: " + values.length);
         }
@@ -966,9 +984,9 @@ public class SimpleCalculateEngine {
       case "min":
         if (values.length >= 2) {
           // min(value1, value2, ...) - 最小值
-          double min = values[0];
+          BigDecimal min = values[0];
           for (int i = 1; i < values.length; i++) {
-            min = Math.min(min, values[i]);
+            min = min.min(values[i]);
           }
           return min;
         } else {
@@ -978,9 +996,9 @@ public class SimpleCalculateEngine {
       case "max":
         if (values.length >= 2) {
           // max(value1, value2, ...) - 最大值
-          double max = values[0];
+          BigDecimal max = values[0];
           for (int i = 1; i < values.length; i++) {
-            max = Math.max(max, values[i]);
+            max = max.max(values[i]);
           }
           return max;
         } else {
@@ -990,11 +1008,11 @@ public class SimpleCalculateEngine {
       case "avg":
         if (values.length >= 1) {
           // avg(value1, value2, ...) - 平均值
-          double sum = 0;
-          for (double value : values) {
-            sum += value;
+          BigDecimal sum = BigDecimal.ZERO;
+          for (BigDecimal value : values) {
+            sum = sum.add(value);
           }
-          return sum / values.length;
+          return sum.divide(BigDecimal.valueOf(values.length), 10, RoundingMode.HALF_UP);
         } else {
           throw new RuntimeException("avg函数需要至少1个参数，实际参数个数: " + values.length);
         }
@@ -1018,66 +1036,66 @@ public class SimpleCalculateEngine {
     }
   }
 
-  private double calculateMathFunction(String functionName, double value) {
+  private BigDecimal calculateMathFunction(String functionName, BigDecimal value) {
     switch (functionName) {
       // 基础数学函数
       case "sqrt":
-        if (value < 0) {
+        if (value.compareTo(BigDecimal.ZERO) < 0) {
           throw new RuntimeException("sqrt函数参数不能为负数: " + value);
         }
-        return Math.sqrt(value);
+        return BigDecimal.valueOf(Math.sqrt(value.doubleValue()));
       case "abs":
-        return Math.abs(value);
+        return value.abs();
       case "ceil":
-        return Math.ceil(value);
+        return BigDecimal.valueOf(Math.ceil(value.doubleValue()));
       case "floor":
-        return Math.floor(value);
+        return BigDecimal.valueOf(Math.floor(value.doubleValue()));
       case "round": {
-        return Math.round(value);
+        return BigDecimal.valueOf(Math.round(value.doubleValue()));
       }
 
       // 三角函数
       case "sin":
-        return Math.sin(value);
+        return BigDecimal.valueOf(Math.sin(value.doubleValue()));
       case "cos":
-        return Math.cos(value);
+        return BigDecimal.valueOf(Math.cos(value.doubleValue()));
       case "tan":
-        return Math.tan(value);
+        return BigDecimal.valueOf(Math.tan(value.doubleValue()));
       case "asin":
-        if (value < -1 || value > 1) {
+        if (value.compareTo(BigDecimal.valueOf(-1)) < 0 || value.compareTo(BigDecimal.ONE) > 0) {
           throw new RuntimeException("asin函数参数必须在[-1,1]范围内: " + value);
         }
-        return Math.asin(value);
+        return BigDecimal.valueOf(Math.asin(value.doubleValue()));
       case "acos":
-        if (value < -1 || value > 1) {
+        if (value.compareTo(BigDecimal.valueOf(-1)) < 0 || value.compareTo(BigDecimal.ONE) > 0) {
           throw new RuntimeException("acos函数参数必须在[-1,1]范围内: " + value);
         }
-        return Math.acos(value);
+        return BigDecimal.valueOf(Math.acos(value.doubleValue()));
       case "atan":
-        return Math.atan(value);
+        return BigDecimal.valueOf(Math.atan(value.doubleValue()));
 
       // 双曲函数
       case "sinh":
-        return Math.sinh(value);
+        return BigDecimal.valueOf(Math.sinh(value.doubleValue()));
       case "cosh":
-        return Math.cosh(value);
+        return BigDecimal.valueOf(Math.cosh(value.doubleValue()));
       case "tanh":
-        return Math.tanh(value);
+        return BigDecimal.valueOf(Math.tanh(value.doubleValue()));
 
       // 对数函数
       case "log":
-        if (value <= 0) {
+        if (value.compareTo(BigDecimal.ZERO) <= 0) {
           throw new RuntimeException("log函数参数必须大于0: " + value);
         }
-        return Math.log(value);
+        return BigDecimal.valueOf(Math.log(value.doubleValue()));
 
       case "log10":
-        if (value <= 0) {
+        if (value.compareTo(BigDecimal.ZERO) <= 0) {
           throw new RuntimeException("log10函数参数必须大于0: " + value);
         }
-        return Math.log10(value);
+        return BigDecimal.valueOf(Math.log10(value.doubleValue()));
       case "exp":
-        return Math.exp(value);
+        return BigDecimal.valueOf(Math.exp(value.doubleValue()));
 
       // 多参数函数的单参数版本
       case "avg":

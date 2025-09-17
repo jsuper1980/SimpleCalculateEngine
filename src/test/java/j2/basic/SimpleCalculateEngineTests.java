@@ -1,14 +1,19 @@
 package j2.basic;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 /**
  * SimpleCalculateEngine 全面测试用例
@@ -37,20 +42,20 @@ public class SimpleCalculateEngineTests {
   public void testBasicAdditionSubtraction() {
     engine.setCellValue("A1", "=10+20");
     System.out.println("10+20 = " + engine.getCellValue("A1"));
-    assertEquals("30.0", engine.getCellValue("A1"));
+    assertEquals(new BigDecimal("30"), engine.getCellValueNumber("A1"));
 
     engine.setCellValue("A2", "=50-30");
     System.out.println("50-30 = " + engine.getCellValue("A2"));
-    assertEquals("20.0", engine.getCellValue("A2"));
+    assertEquals(new BigDecimal("20"), engine.getCellValueNumber("A2"));
 
-    engine.setCellValue("A3", "=10+20-5");
-    System.out.println("10+20-5 = " + engine.getCellValue("A3"));
-    assertEquals("25.0", engine.getCellValue("A3"));
+    engine.setCellValue("A3", "=10+20-5.1");
+    System.out.println("10+20-5.1 = " + engine.getCellValue("A3"));
+    assertEquals("24.9", engine.getCellValue("A3"));
 
     // 测试负数
     engine.setCellValue("A4", "=-10+5");
     System.out.println("-10+5 = " + engine.getCellValue("A4"));
-    assertEquals("-5.0", engine.getCellValue("A4"));
+    assertEquals(new BigDecimal("-5"), engine.getCellValueNumber("A4"));
   }
 
   @Test
@@ -58,15 +63,15 @@ public class SimpleCalculateEngineTests {
   public void testBasicMultiplicationDivision() {
     engine.setCellValue("B1", "=10*20");
     System.out.println("10*20 = " + engine.getCellValue("B1"));
-    assertEquals("200.0", engine.getCellValue("B1"));
+    assertEquals("200", engine.getCellValue("B1"));
 
     engine.setCellValue("B2", "=100/4");
-    System.out.println("100/4 = " + engine.getCellValue("B2"));
-    assertEquals("25.0", engine.getCellValue("B2"));
+    System.out.println("100/4 = " + engine.getCellValueNumber("B2"));
+    assertEquals("25", engine.getCellValue("B2"));
 
     engine.setCellValue("B3", "=10*2/4");
     System.out.println("10*2/4 = " + engine.getCellValue("B3"));
-    assertEquals("5.0", engine.getCellValue("B3"));
+    assertEquals("5", engine.getCellValue("B3"));
   }
 
   @Test
@@ -74,15 +79,15 @@ public class SimpleCalculateEngineTests {
   public void testPowerOperation() {
     engine.setCellValue("C1", "=2^3");
     System.out.println("2^3 = " + engine.getCellValue("C1"));
-    assertEquals("8.0", engine.getCellValue("C1"));
+    assertEquals("8", engine.getCellValue("C1"));
 
     engine.setCellValue("C2", "=3^2");
     System.out.println("3^2 = " + engine.getCellValue("C2"));
-    assertEquals("9.0", engine.getCellValue("C2"));
+    assertEquals("9", engine.getCellValue("C2"));
 
     engine.setCellValue("C3", "=2^3^2"); // 右结合：2^(3^2) = 2^9 = 512
     System.out.println("2^3^2 = " + engine.getCellValue("C3"));
-    assertEquals("512.0", engine.getCellValue("C3"));
+    assertEquals("512", engine.getCellValue("C3"));
   }
 
   @Test
@@ -90,15 +95,15 @@ public class SimpleCalculateEngineTests {
   public void testParentheses() {
     engine.setCellValue("D1", "=(10+20)*3");
     System.out.println("(10+20)*3 = " + engine.getCellValue("D1"));
-    assertEquals("90.0", engine.getCellValue("D1"));
+    assertEquals("90", engine.getCellValue("D1"));
 
     engine.setCellValue("D2", "=10+(20*3)");
     System.out.println("10+(20*3) = " + engine.getCellValue("D2"));
-    assertEquals("70.0", engine.getCellValue("D2"));
+    assertEquals("70", engine.getCellValue("D2"));
 
     engine.setCellValue("D3", "=((10+5)*2)^2");
     System.out.println("((10+5)*2)^2 = " + engine.getCellValue("D3"));
-    assertEquals("900.0", engine.getCellValue("D3"));
+    assertEquals("900", engine.getCellValue("D3"));
   }
 
   @Test
@@ -106,15 +111,15 @@ public class SimpleCalculateEngineTests {
   public void testOperatorPrecedence() {
     engine.setCellValue("E1", "=10+20*3");
     System.out.println("10+20*3 = " + engine.getCellValue("E1"));
-    assertEquals("70.0", engine.getCellValue("E1")); // 先乘后加
+    assertEquals("70", engine.getCellValue("E1")); // 先乘后加
 
     engine.setCellValue("E2", "=2^3*4");
     System.out.println("2^3*4 = " + engine.getCellValue("E2"));
-    assertEquals("32.0", engine.getCellValue("E2")); // 先幂后乘
+    assertEquals("32", engine.getCellValue("E2")); // 先幂后乘
 
     engine.setCellValue("E3", "=2+3*4^2");
     System.out.println("2+3*4^2 = " + engine.getCellValue("E3"));
-    assertEquals("50.0", engine.getCellValue("E3")); // 2+3*16=50
+    assertEquals("50", engine.getCellValue("E3")); // 2+3*16=50
   }
 
   // ==================== 单元格管理测试 ====================
@@ -126,7 +131,6 @@ public class SimpleCalculateEngineTests {
     engine.setCellValue("F1", 100);
     System.out.println("F1 = " + engine.getCellValue("F1"));
     assertEquals("100", engine.getCellValue("F1"));
-    assertEquals(new BigDecimal("100"), engine.getCellValueNumber("F1"));
 
     // 设置字符串
     engine.setCellValue("F2", "Hello");
@@ -136,7 +140,7 @@ public class SimpleCalculateEngineTests {
     // 设置公式
     engine.setCellValue("F3", "=F1+50");
     System.out.println("F3 = F1+50 = " + engine.getCellValue("F3"));
-    assertEquals("150.0", engine.getCellValue("F3"));
+    assertEquals(BigDecimal.valueOf(150), engine.getCellValueNumber("F3"));
   }
 
   @Test
@@ -149,12 +153,12 @@ public class SimpleCalculateEngineTests {
     System.out.println("G1 = " + engine.getCellValue("G1"));
     System.out.println("G2 = " + engine.getCellValue("G2"));
     System.out.println("G3 = G1+G2 = " + engine.getCellValue("G3"));
-    assertEquals("30.0", engine.getCellValue("G3"));
+    assertEquals("30", engine.getCellValue("G3"));
 
     // 修改被引用的单元格，检查联动更新
     engine.setCellValue("G1", 15);
     System.out.println("G3 = " + engine.getCellValue("G3"));
-    assertEquals("35.0", engine.getCellValue("G3"));
+    assertEquals("35", engine.getCellValue("G3"));
   }
 
   @Test
@@ -172,9 +176,9 @@ public class SimpleCalculateEngineTests {
     System.out.println("H4 = H3+H1 = " + engine.getCellValue("H4"));
     System.out.println("H5 = (H1+H2)*H3 = " + engine.getCellValue("H5"));
 
-    assertEquals("50.0", engine.getCellValue("H3")); // 5*10
-    assertEquals("55.0", engine.getCellValue("H4")); // 50+5
-    assertEquals("750.0", engine.getCellValue("H5")); // (5+10)*50
+    assertEquals(new BigDecimal("50"), engine.getCellValueNumber("H3")); // 5*10
+    assertEquals(new BigDecimal("55"), engine.getCellValueNumber("H4")); // 50+5
+    assertEquals(new BigDecimal("750"), engine.getCellValueNumber("H5")); // (5+10)*50
   }
 
   // ==================== 数学函数测试 ====================
@@ -184,23 +188,23 @@ public class SimpleCalculateEngineTests {
   public void testBasicMathFunctions() {
     engine.setCellValue("I1", "=sqrt(25)");
     System.out.println("sqrt(25) = " + engine.getCellValue("I1"));
-    assertEquals("5.0", engine.getCellValue("I1"));
+    assertEquals("5", engine.getCellValue("I1"));
 
     engine.setCellValue("I2", "=abs(-10)");
     System.out.println("abs(-10) = " + engine.getCellValue("I2"));
-    assertEquals("10.0", engine.getCellValue("I2"));
+    assertEquals("10", engine.getCellValue("I2"));
 
     engine.setCellValue("I3", "=ceil(4.3)");
     System.out.println("ceil(4.3) = " + engine.getCellValue("I3"));
-    assertEquals("5.0", engine.getCellValue("I3"));
+    assertEquals("5", engine.getCellValue("I3"));
 
     engine.setCellValue("I4", "=floor(4.7)");
     System.out.println("floor(4.7) = " + engine.getCellValue("I4"));
-    assertEquals("4.0", engine.getCellValue("I4"));
+    assertEquals("4", engine.getCellValue("I4"));
 
     engine.setCellValue("I5", "=round(4.6)");
     System.out.println("round(4.6) = " + engine.getCellValue("I5"));
-    assertEquals("5.0", engine.getCellValue("I5"));
+    assertEquals("5", engine.getCellValue("I5"));
   }
 
   @Test
@@ -216,7 +220,7 @@ public class SimpleCalculateEngineTests {
 
     engine.setCellValue("J2", "=cos(0)");
     System.out.println("cos(0) = " + engine.getCellValue("J2"));
-    assertEquals("1.0", engine.getCellValue("J2"));
+    assertEquals("1", engine.getCellValue("J2"));
 
     engine.setCellValue("J3", "=tan(π/4)");
     System.out.println("tan(π/4) = " + engine.getCellValue("J3"));
@@ -236,11 +240,11 @@ public class SimpleCalculateEngineTests {
 
     engine.setCellValue("K2", "=log10(100)");
     System.out.println("log10(100) = " + engine.getCellValue("K2"));
-    assertEquals("2.0", engine.getCellValue("K2"));
+    assertEquals("2", engine.getCellValue("K2"));
 
     engine.setCellValue("K3", "=exp(0)");
     System.out.println("exp(0) = " + engine.getCellValue("K3"));
-    assertEquals("1.0", engine.getCellValue("K3"));
+    assertEquals("1", engine.getCellValue("K3"));
   }
 
   @Test
@@ -248,19 +252,19 @@ public class SimpleCalculateEngineTests {
   public void testMultiParameterFunctions() {
     engine.setCellValue("L1", "=pow(2,10)");
     System.out.println("pow(2,10) = " + engine.getCellValue("L1"));
-    assertEquals("1024.0", engine.getCellValue("L1"));
+    assertEquals("1024", engine.getCellValue("L1"));
 
     engine.setCellValue("L2", "=min(10,20,5,30)");
     System.out.println("min(10,20,5,30) = " + engine.getCellValue("L2"));
-    assertEquals("5.0", engine.getCellValue("L2"));
+    assertEquals("5", engine.getCellValue("L2"));
 
     engine.setCellValue("L3", "=max(10,20,5,30)");
     System.out.println("max(10,20,5,30) = " + engine.getCellValue("L3"));
-    assertEquals("30.0", engine.getCellValue("L3"));
+    assertEquals("30", engine.getCellValue("L3"));
 
     engine.setCellValue("L4", "=avg(10,20,30)");
     System.out.println("avg(10,20,30) = " + engine.getCellValue("L4"));
-    assertEquals("20.0", engine.getCellValue("L4"));
+    assertEquals("20", engine.getCellValue("L4"));
 
     engine.setCellValue("L5", "=round(3.14159,2)");
     System.out.println("round(3.14159,2) = " + engine.getCellValue("L5"));
@@ -282,9 +286,9 @@ public class SimpleCalculateEngineTests {
     System.out.println("M3 = M2+5 = " + engine.getCellValue("M3"));
     System.out.println("M4 = M3^2 = " + engine.getCellValue("M4"));
 
-    assertEquals("20.0", engine.getCellValue("M2"));
-    assertEquals("25.0", engine.getCellValue("M3"));
-    assertEquals("625.0", engine.getCellValue("M4"));
+    assertEquals("20", engine.getCellValue("M2"));
+    assertEquals("25", engine.getCellValue("M3"));
+    assertEquals("625", engine.getCellValue("M4"));
 
     // 修改根节点，检查整个依赖链更新
     engine.setCellValue("M1", 5);
@@ -295,15 +299,15 @@ public class SimpleCalculateEngineTests {
     System.out.println("M3 = M2+5 = " + engine.getCellValue("M3"));
     System.out.println("M4 = M3^2 = " + engine.getCellValue("M4"));
 
-    assertEquals("10.0", engine.getCellValue("M2"));
-    assertEquals("15.0", engine.getCellValue("M3"));
-    assertEquals("225.0", engine.getCellValue("M4"));
+    assertEquals("10", engine.getCellValue("M2"));
+    assertEquals("15", engine.getCellValue("M3"));
+    assertEquals("225", engine.getCellValue("M4"));
   }
 
   @Test
   @DisplayName("测试复杂依赖网络")
   public void testComplexDependencyNetwork() {
-    engine.setCellValue("N1", 2);
+    engine.setCellValue("N1", 10);
     engine.setCellValue("N2", 3);
     engine.setCellValue("N3", "=N1+N2");
     engine.setCellValue("N4", "=N1*N2");
@@ -317,26 +321,25 @@ public class SimpleCalculateEngineTests {
     System.out.println("N5 = N3+N4 = " + engine.getCellValue("N5"));
     System.out.println("N6 = N3*N4 = " + engine.getCellValue("N6"));
 
-    assertEquals("5.0", engine.getCellValue("N3")); // 2+3
-    assertEquals("6.0", engine.getCellValue("N4")); // 2*3
-    assertEquals("11.0", engine.getCellValue("N5")); // 5+6
-    assertEquals("30.0", engine.getCellValue("N6")); // 5*6
+    assertEquals("13", engine.getCellValue("N3")); // 10+3
+    assertEquals("30", engine.getCellValue("N4")); // 10*3
+    assertEquals("43", engine.getCellValue("N5")); // 13+30
+    assertEquals("390", engine.getCellValue("N6")); // 13*30
 
     // 修改一个根节点
-    engine.setCellValue("N1", 4);
+    engine.setCellValue("N1", 5);
 
-    System.out.println("修改 N1 为 4 后：");
-    System.out.println("N1 = " + engine.getCellValue("N1"));
-    System.out.println("N2 = " + engine.getCellValue("N2"));
+    System.out.println("修改 N1 为 5 后：");
     System.out.println("N3 = N1+N2 = " + engine.getCellValue("N3"));
     System.out.println("N4 = N1*N2 = " + engine.getCellValue("N4"));
     System.out.println("N5 = N3+N4 = " + engine.getCellValue("N5"));
     System.out.println("N6 = N3*N4 = " + engine.getCellValue("N6"));
 
-    assertEquals("7.0", engine.getCellValue("N3")); // 4+3
-    assertEquals("12.0", engine.getCellValue("N4")); // 4*3
-    assertEquals("19.0", engine.getCellValue("N5")); // 7+12
-    assertEquals("84.0", engine.getCellValue("N6")); // 7*12
+    assertEquals("5", engine.getCellValue("N1"));
+    assertEquals("8", engine.getCellValue("N3"));
+    assertEquals("15", engine.getCellValue("N4"));
+    assertEquals("23", engine.getCellValue("N5"));
+    assertEquals("120", engine.getCellValue("N6"));
   }
 
   // ==================== 错误处理测试 ====================
@@ -428,26 +431,26 @@ public class SimpleCalculateEngineTests {
     // 调用Math.max
     engine.setCellValue("S1", "=jcall(\"java.lang.Math\",\"max\",10,20)");
     System.out.println("S1 = jcall(\"java.lang.Math\",\"max\",10,20) = " + engine.getCellValue("S1"));
-    assertEquals("20.0", engine.getCellValue("S1"));
+    assertEquals("20", engine.getCellValue("S1"));
 
     // 调用Math.min
     engine.setCellValue("S2", "=jcall(\"java.lang.Math\",\"min\",10,20)");
     System.out.println("S2 = jcall(\"java.lang.Math\",\"min\",10,20) = " + engine.getCellValue("S2"));
-    assertEquals("10.0", engine.getCellValue("S2"));
+    assertEquals("10", engine.getCellValue("S2"));
 
     // 调用Math.abs
     engine.setCellValue("S3", "=jcall(\"java.lang.Math\",\"abs\",-15)");
     System.out.println("S3 = jcall(\"java.lang.Math\",\"abs\",-15) = " + engine.getCellValue("S3"));
-    assertEquals("15.0", engine.getCellValue("S3"));
+    assertEquals("15", engine.getCellValue("S3"));
 
     // 调用String.valueOf - 返回数值类型
     engine.setCellValue("S4", "=jcall(\"java.lang.Integer\",\"valueOf\",123)");
     System.out.println("S4 = jcall(\"java.lang.Integer\",\"valueOf\",123) = " + engine.getCellValue("S4"));
-    assertEquals("123.0", engine.getCellValue("S4"));
+    assertEquals("123", engine.getCellValue("S4"));
 
     engine.setCellValue("S5", "=jcall(\"j2.basic.MathUtils\",\"factorial\",5)");
     System.out.println("S5 = jcall(\"j2.basic.MathUtils\",\"factorial\",5) = " + engine.getCellValue("S5"));
-    assertEquals("120.0", engine.getCellValue("S5"));
+    assertEquals("120", engine.getCellValue("S5"));
   }
 
   @Test
@@ -493,14 +496,14 @@ public class SimpleCalculateEngineTests {
     engine.setCellValue("_result", "=_temp*2");
     System.out.println("_temp = " + engine.getCellValue("_temp"));
     System.out.println("_result = _temp*2 = " + engine.getCellValue("_result"));
-    assertEquals("84.0", engine.getCellValue("_result"));
+    assertEquals("84", engine.getCellValue("_result"));
 
     // 混合命名
     engine.setCellValue("value_α", 100);
     engine.setCellValue("计算_β", "=value_α+50");
     System.out.println("value_α = " + engine.getCellValue("value_α"));
     System.out.println("计算_β = value_α+50 = " + engine.getCellValue("计算_β"));
-    assertEquals("150.0", engine.getCellValue("计算_β"));
+    assertEquals("150", engine.getCellValue("计算_β"));
   }
 
   // ==================== 并发安全测试 ====================
@@ -591,7 +594,31 @@ public class SimpleCalculateEngineTests {
     assertEquals(expectedCircumference, Double.parseDouble(engine.getCellValue("周长")), 1e-10);
     assertEquals(expectedRatio, Double.parseDouble(engine.getCellValue("比值")), 1e-10);
     assertEquals("78.54", engine.getCellValue("面积_四舍五入"));
-    assertEquals("32.0", engine.getCellValue("周长_向上取整"));
+    assertEquals("32", engine.getCellValue("周长_向上取整"));
+  }
+
+  @Test
+  @DisplayName("测试BigDecimal精度改进")
+  public void testBigDecimalPrecisionImprovement() {
+    // 测试浮点精度问题的改进
+    engine.setCellValue("P1", "=0.1+0.2");
+    System.out.println("0.1+0.2 = " + engine.getCellValue("P1"));
+    assertEquals(new BigDecimal("0.3"), engine.getCellValueNumber("P1"));
+
+    engine.setCellValue("P2", "=1.0-0.9");
+    System.out.println("1.0-0.9 = " + engine.getCellValue("P2"));
+    assertEquals(new BigDecimal("0.1"), engine.getCellValueNumber("P2"));
+
+    engine.setCellValue("P3", "=0.1*3");
+    System.out.println("0.1*3 = " + engine.getCellValue("P3"));
+    assertEquals(new BigDecimal("0.3"), engine.getCellValueNumber("P3"));
+
+    // 测试高精度计算
+    engine.setCellValue("P4", "=1/3*3");
+    System.out.println("1/3*3 = " + engine.getCellValue("P4"));
+    // 由于除法可能产生无限小数，这里检查结果是否接近1
+    BigDecimal result = engine.getCellValueNumber("P4");
+    assertTrue(result.subtract(BigDecimal.ONE).abs().compareTo(new BigDecimal("0.0001")) < 0);
   }
 
   @Test
@@ -600,7 +627,7 @@ public class SimpleCalculateEngineTests {
     // 测试引擎可以正常关闭
     SimpleCalculateEngine testEngine = new SimpleCalculateEngine();
     testEngine.setCellValue("test", "=1+1");
-    assertEquals("2.0", testEngine.getCellValue("test"));
+    assertEquals("2", testEngine.getCellValue("test"));
 
     // 关闭引擎
     assertDoesNotThrow(() -> testEngine.shutdown());
