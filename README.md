@@ -251,7 +251,7 @@ void shutdown()  // 关闭线程池，释放资源
 
 ```bash
 # 运行演示
-mvn test-compile exec:java -Dexec.mainClass="com.example.excelengine.ExcelEngineDemo"
+mvn test
 ```
 
 ## 📄 许可证
