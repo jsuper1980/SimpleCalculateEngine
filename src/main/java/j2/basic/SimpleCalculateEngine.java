@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
  * @author j² use TRAE
  * @version 1.0
  * @since 20250917
+ * @license Apache-2.0 license
  */
 public class SimpleCalculateEngine {
   public static final String ERROR = "#ERROR#";
@@ -243,10 +244,10 @@ public class SimpleCalculateEngine {
     if (value == null) {
       return null;
     }
-    
+
     // 使用stripTrailingZeros去除尾随零，然后转换为字符串
     BigDecimal stripped = value.stripTrailingZeros();
-    
+
     // 如果结果的scale为负数（如1E+2），使用toPlainString()避免科学计数法
     return stripped.scale() < 0 ? stripped.toPlainString() : stripped.toString();
   }
@@ -772,7 +773,7 @@ public class SimpleCalculateEngine {
           try {
             BigDecimal value = evaluateSimpleExpressionWithoutFunctions(finalArgument);
             // 尝试转换为整数
-            if (value.scale() == 0 && value.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) <= 0 && 
+            if (value.scale() == 0 && value.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) <= 0 &&
                 value.compareTo(BigDecimal.valueOf(Integer.MIN_VALUE)) >= 0) {
               methodArgs[i - 2] = value.intValue();
               paramTypes[i - 2] = int.class;
