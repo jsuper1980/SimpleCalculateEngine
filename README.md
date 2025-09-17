@@ -80,10 +80,10 @@ BigDecimal numResult = engine.getCellValueNumber("A3"); // 30
 
 // 5. 高精度计算示例
 engine.setCellValue("B1", "=0.1+0.2");
-System.out.println(engine.getCellValue("B1")); // "0.3" (而不是 0.30000000000000004)
+System.out.println(engine.getCellValue("B1")); // "0.3"
 
 engine.setCellValue("B2", "=10/2");
-System.out.println(engine.getCellValue("B2")); // "5" (而不是 5.0)
+System.out.println(engine.getCellValue("B2")); // "5"
 
 // 6. 关闭引擎（释放线程池资源）
 engine.shutdown();
@@ -203,8 +203,8 @@ engine.setCellValue("A3", "=0.1*3");    // "0.3"
 自动优化显示格式，去除无意义的尾随零：
 
 ```java
-engine.setCellValue("B1", "=10/2");     // "5" (而不是 "5.0")
-engine.setCellValue("B2", "=1.0000");   // "1" (而不是 "1.0000")
+engine.setCellValue("B1", "=10/2");     // "5"
+engine.setCellValue("B2", "=1.0000");   // "1"
 engine.setCellValue("B3", "=10/3");     // "3.3333333333" (保留必要的小数位)
 ```
 
