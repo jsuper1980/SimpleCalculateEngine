@@ -913,18 +913,38 @@ public class SimpleCalculateEngine {
       }
     }
 
-    // 处理乘除法（中等优先级）
+    // 处理乘除法、整数除、余数除（中等优先级）
     for (int i = expression.length() - 1; i >= 0; i--) {
       char c = expression.charAt(i);
-      if ((c == '*' || c == '/') && i > 0) {
+      if ((c == '*' || c == '/' || c == '\\' || c == '%') && i > 0) {
         String left = expression.substring(0, i);
         String right = expression.substring(i + 1);
         BigDecimal leftVal = evaluateSimpleExpressionWithoutFunctions(left);
         BigDecimal rightVal = evaluateSimpleExpressionWithoutFunctions(right);
-        if (c == '/' && rightVal.compareTo(BigDecimal.ZERO) == 0) {
+        
+        // 检查除零错误
+        if ((c == '/' || c == '\\' || c == '%') && rightVal.compareTo(BigDecimal.ZERO) == 0) {
           throw new RuntimeException("除零错误");
         }
-        return c == '*' ? leftVal.multiply(rightVal) : leftVal.divide(rightVal, 10, RoundingMode.HALF_UP);
+        
+        switch (c) {
+          case '*':
+            return leftVal.multiply(rightVal);
+          case '/':
+            return leftVal.divide(rightVal, 10, RoundingMode.HALF_UP);
+          case '\\':
+            // 整数除法：向下取整（向负无穷方向舍入）
+            return leftVal.divide(rightVal, 0, RoundingMode.FLOOR);
+          case '%':
+            // 余数运算：实现数学上的模运算（总是非负）
+            BigDecimal remainder = leftVal.remainder(rightVal);
+            if (remainder.compareTo(BigDecimal.ZERO) < 0) {
+              remainder = remainder.add(rightVal.abs());
+            }
+            return remainder;
+          default:
+            throw new RuntimeException("未知运算符: " + c);
+        }
       }
     }
 

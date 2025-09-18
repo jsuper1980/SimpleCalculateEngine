@@ -75,6 +75,59 @@ public class SimpleCalculateEngineTests {
   }
 
   @Test
+  @DisplayName("测试整数除和余数除运算")
+  public void testIntegerDivisionAndModulo() {
+    // 测试整数除法 \\
+    engine.setCellValue("B4", "=17\\5");
+    System.out.println("17\\5 = " + engine.getCellValue("B4"));
+    assertEquals("3", engine.getCellValue("B4")); // 17除以5的整数部分是3
+
+    engine.setCellValue("B5", "=100\\7");
+    System.out.println("100\\7 = " + engine.getCellValue("B5"));
+    assertEquals("14", engine.getCellValue("B5")); // 100除以7的整数部分是14
+
+    // 测试余数运算 %
+    engine.setCellValue("B6", "=17%5");
+    System.out.println("17%5 = " + engine.getCellValue("B6"));
+    assertEquals("2", engine.getCellValue("B6")); // 17除以5的余数是2
+
+    engine.setCellValue("B7", "=100%7");
+    System.out.println("100%7 = " + engine.getCellValue("B7"));
+    assertEquals("2", engine.getCellValue("B7")); // 100除以7的余数是2
+
+    // 测试负数的整数除法和余数
+    engine.setCellValue("B8", "=-17\\5");
+    System.out.println("-17\\5 = " + engine.getCellValue("B8"));
+    assertEquals("-4", engine.getCellValue("B8")); // -17除以5向下取整是-4
+
+    engine.setCellValue("B9", "=-17%5");
+    System.out.println("-17%5 = " + engine.getCellValue("B9"));
+    assertEquals("3", engine.getCellValue("B9")); // -17除以5的余数是3（数学模运算）
+
+    // 测试小数的整数除法
+    engine.setCellValue("B10", "=17.8\\5.2");
+    System.out.println("17.8\\5.2 = " + engine.getCellValue("B10"));
+    assertEquals("3", engine.getCellValue("B10")); // 17.8除以5.2向下取整是3
+
+    // 测试除零错误
+    assertThrows(RuntimeException.class, () -> {
+      engine.setCellValue("B11", "=10\\0");
+      String result = engine.getCellValue("B11");
+      if (result.equals("#ERROR#")) {
+        throw new RuntimeException("除零错误");
+      }
+    }, "整数除零应该抛出异常");
+
+    assertThrows(RuntimeException.class, () -> {
+      engine.setCellValue("B12", "=10%0");
+      String result = engine.getCellValue("B12");
+      if (result.equals("#ERROR#")) {
+        throw new RuntimeException("除零错误");
+      }
+    }, "余数除零应该抛出异常");
+  }
+
+  @Test
   @DisplayName("测试幂运算")
   public void testPowerOperation() {
     engine.setCellValue("C1", "=2^3");
