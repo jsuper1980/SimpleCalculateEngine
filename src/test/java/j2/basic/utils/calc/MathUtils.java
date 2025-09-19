@@ -1,4 +1,4 @@
-package j2.basic;
+package j2.basic.utils.calc;
 
 /**
  * 数学工具类 - 用于演示Java类调用功能

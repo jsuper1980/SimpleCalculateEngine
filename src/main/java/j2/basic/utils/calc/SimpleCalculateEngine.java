@@ -1,4 +1,4 @@
-package j2.basic;
+package j2.basic.utils.calc;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;

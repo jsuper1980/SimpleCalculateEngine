@@ -1,4 +1,4 @@
-package j2.basic;
+package j2.basic.utils.calc;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
