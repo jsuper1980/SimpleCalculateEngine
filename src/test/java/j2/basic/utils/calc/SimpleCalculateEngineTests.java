@@ -242,24 +242,28 @@ public class SimpleCalculateEngineTests {
   @DisplayName("测试基础数学函数")
   public void testBasicMathFunctions() {
     engine.set("I1", "=sqrt(25)");
-    System.out.println("sqrt(25) = " + engine.get("I1"));
+    System.out.println("sqrt(25) = " + engine.get("I1") + ", java sqrt(25) = " + Math.sqrt(25));
     assertEquals("5", engine.get("I1"));
 
     engine.set("I2", "=abs(-10)");
-    System.out.println("abs(-10) = " + engine.get("I2"));
+    System.out.println("abs(-10) = " + engine.get("I2") + ", java abs(-10) = " + Math.abs(-10));
     assertEquals("10", engine.get("I2"));
 
     engine.set("I3", "=ceil(4.3)");
-    System.out.println("ceil(4.3) = " + engine.get("I3"));
+    System.out.println("ceil(4.3) = " + engine.get("I3") + ", java ceil(4.3) = " + Math.ceil(4.3));
     assertEquals("5", engine.get("I3"));
 
     engine.set("I4", "=floor(4.7)");
-    System.out.println("floor(4.7) = " + engine.get("I4"));
+    System.out.println("floor(4.7) = " + engine.get("I4") + ", java floor(4.7) = " + Math.floor(4.7));
     assertEquals("4", engine.get("I4"));
 
     engine.set("I5", "=round(4.6)");
-    System.out.println("round(4.6) = " + engine.get("I5"));
+    System.out.println("round(4.6) = " + engine.get("I5") + ", java round(4.6) = " + Math.round(4.6));
     assertEquals("5", engine.get("I5"));
+
+    engine.set("I6", "=round(-4.6)");
+    System.out.println("round(-4.6) = " + engine.get("I6") + ", java round(-4.6) = " + Math.round(-4.6));
+    assertEquals("-5", engine.get("I6"));
   }
 
   @Test
