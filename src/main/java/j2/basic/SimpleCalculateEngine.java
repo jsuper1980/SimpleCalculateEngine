@@ -31,13 +31,14 @@ import java.util.regex.Pattern;
  * - Java调用：jcall
  * 用法:
  * 1. 初始化引擎：SimpleCalculateEngine engine = new SimpleCalculateEngine();
- * 2. 设置单元格值：engine.set("A1", 10);
- * 3. 设置单元格公式：engine.set("A2", "=A1+1");
- * 4. 获取单元格值：String value = engine.get("A2"); // 结果为 "11"
- * 5. 获取单元格数值: BigDecimal value= engine.getNumber("A2"); // 结果为 11
- * 6. 检查单元格是否存在：boolean exists = engine.cellExists("A2"); // 结果为 true
- * 7. 获取单元格定义：String definition = engine.getDefinition("A2"); // 结果为 "=A1+1"
- * 8. 清除单元格：engine.clear("A2"); // 单元格A2的内容和计算结果都会被清空
+ * 2. 优雅关闭引擎: engine.shutdown();
+ * 3. 设置单元格值：engine.set("A1", 10);
+ * 4. 设置单元格公式：engine.set("A2", "=A1+1");
+ * 5. 获取单元格值：String value = engine.get("A2"); // 结果为 "11"
+ * 6. 获取单元格数值: BigDecimal value= engine.getNumber("A2"); // 结果为 11
+ * 7. 检查单元格是否存在：boolean exists = engine.cellExists("A2"); // 结果为 true
+ * 8. 获取单元格定义：String definition = engine.getDefinition("A2"); // 结果为 "=A1+1"
+ * 9. 清除单元格：engine.clear("A2"); // 单元格A2的内容和计算结果都会被清空
  * 
  * @author j² use TRAE
  * @version 1.0
@@ -106,7 +107,7 @@ public class SimpleCalculateEngine {
   private final ExecutorService executorService = Executors.newFixedThreadPool(
       Runtime.getRuntime().availableProcessors());
 
-  // 添加关闭方法，用于优雅关闭线程池
+  // 关闭方法，用于优雅关闭线程池
   public void shutdown() {
     executorService.shutdown();
     try {
