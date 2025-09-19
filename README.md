@@ -71,24 +71,27 @@
 SimpleCalculateEngine engine = new SimpleCalculateEngine();
 
 // 2. 设置单元格值
-engine.setCellValue("A1", 10);
-engine.setCellValue("A2", 20);
+engine.set("A1", 10);
+engine.set("A2", 20);
 
 // 3. 设置公式
-engine.setCellValue("A3", "=A1+A2");
+engine.set("A3", "=A1+A2");
 
 // 4. 获取计算结果
-String result = engine.getCellValue("A3"); // "30"
-BigDecimal numResult = engine.getCellValueNumber("A3"); // 30
+String result = engine.get("A3"); // "30"
+BigDecimal numResult = engine.getNumber("A3"); // 30
 
-// 5. 高精度计算示例
-engine.setCellValue("B1", "=0.1+0.2");
-System.out.println(engine.getCellValue("B1")); // "0.3"
+// 5. 获取单元格定义
+String definition = engine.getDefinition("A3"); // "=A1+A2"
 
-engine.setCellValue("B2", "=10/2");
-System.out.println(engine.getCellValue("B2")); // "5"
+// 6. 高精度计算示例
+engine.set("B1", "=0.1+0.2");
+System.out.println(engine.get("B1")); // "0.3"
 
-// 6. 关闭引擎（释放线程池资源）
+engine.set("B2", "=10/2");
+System.out.println(engine.get("B2")); // "5"
+
+// 7. 关闭引擎（释放线程池资源）
 engine.shutdown();
 ```
 
@@ -98,77 +101,103 @@ engine.shutdown();
 
 ```java
 // ✅ 支持的命名方式
-engine.setCellValue("A1", 100);           // 传统Excel风格
-engine.setCellValue("π", Math.PI);        // 希腊字母
-engine.setCellValue("半径", 10);           // 中文
-engine.setCellValue("_temp", 42);         // 下划线开头
-engine.setCellValue("value_α", 100);      // 混合命名
+engine.set("A1", 100);           // 传统Excel风格
+engine.set("π", Math.PI);        // 希腊字母
+engine.set("半径", 10);           // 中文
+engine.set("_temp", 42);         // 下划线开头
+engine.set("value_α", 100);      // 混合命名
 
 // ❌ 不支持的命名方式
-// engine.setCellValue("123abc", 100);    // 不能以数字开头
-// engine.setCellValue("sqrt", 100);      // 不能使用内置函数名
+// engine.set("123abc", 100);    // 不能以数字开头
+// engine.set("sqrt", 100);      // 不能使用内置函数名
 ```
 
 ### 数学表达式示例
 
 ```java
 // 基础运算
-engine.setCellValue("B1", "=10+20*3");        // 70
-engine.setCellValue("B2", "=(10+20)*3");      // 90
-engine.setCellValue("B3", "=2^3");            // 8 (幂运算)
+engine.set("B1", "=10+20*3");        // 70
+engine.set("B2", "=(10+20)*3");      // 90
+engine.set("B3", "=2^3");            // 8 (幂运算)
 
 // 整数除法和余数运算
-engine.setCellValue("B4", "=17\\5");          // 3 (整数除法)
-engine.setCellValue("B5", "=17%5");           // 2 (余数运算)
-engine.setCellValue("B6", "=-17\\5");         // -4 (负数整数除法)
-engine.setCellValue("B7", "=-17%5");          // 3 (负数余数运算，结果总是非负)
+engine.set("B4", "=17\\5");          // 3 (整数除法)
+engine.set("B5", "=17%5");           // 2 (余数运算)
+engine.set("B6", "=-17\\5");         // -4 (负数整数除法)
+engine.set("B7", "=-17%5");          // 3 (负数余数运算，结果总是非负)
 
 // 数学函数
-engine.setCellValue("C1", "=sqrt(25)");       // 5.0
-engine.setCellValue("C2", "=sin(π/2)");       // 1.0
-engine.setCellValue("C3", "=log(exp(2))");    // 2.0
+engine.set("C1", "=sqrt(25)");       // 5.0
+engine.set("C2", "=sin(π/2)");       // 1.0
+engine.set("C3", "=log(exp(2))");    // 2.0
 
 // 多参数函数
-engine.setCellValue("D1", "=max(10,20,30)");  // 30
-engine.setCellValue("D2", "=avg(10,20,30)");  // 20.0
-engine.setCellValue("D3", "=pow(2,10)");      // 1024.0
+engine.set("D1", "=max(10,20,30)");  // 30
+engine.set("D2", "=avg(10,20,30)");  // 20.0
+engine.set("D3", "=pow(2,10)");      // 1024.0
 ```
 
 ### 复杂公式示例
 
 ```java
 // 圆的面积和周长计算
-engine.setCellValue("π", Math.PI);
-engine.setCellValue("半径", 10);
-engine.setCellValue("面积", "=π*半径^2");      // 314.159...
-engine.setCellValue("周长", "=2*π*半径");      // 62.831...
+engine.set("π", Math.PI);
+engine.set("半径", 10);
+engine.set("面积", "=π*半径^2");      // 314.159...
+engine.set("周长", "=2*π*半径");      // 62.831...
 
 // 嵌套函数
-engine.setCellValue("E1", "=sqrt(abs(-36))"); // 6.0
-engine.setCellValue("E2", "=round(π*半径^2, 2)"); // 314.16
+engine.set("E1", "=sqrt(abs(-36))"); // 6.0
+engine.set("E2", "=round(π*半径^2, 2)"); // 314.16
 ```
 
 ### Java 类调用示例
 
 ```java
 // 调用Math类的静态方法
-engine.setCellValue("F1", "=jcall('java.lang.Math', 'random')");
-engine.setCellValue("F2", "=jcall('java.lang.Math', 'max', 10, 20)");
+engine.set("F1", "=jcall('java.lang.Math', 'random')");
+engine.set("F2", "=jcall('java.lang.Math', 'max', 10, 20)");
 
 // 调用String类的静态方法
-engine.setCellValue("F3", "=jcall('java.lang.String', 'valueOf', 123)");
+engine.set("F3", "=jcall('java.lang.String', 'valueOf', 123)");
 ```
+
+### 获取单元格定义
+
+除了获取计算结果，您还可以获取单元格的原始定义字符串：
+
+```java
+// 设置单元格
+engine.set("A1", 10);
+engine.set("A2", "=A1*2+5");
+
+// 获取计算结果
+String result = engine.get("A2");        // "25"
+BigDecimal number = engine.getNumber("A2"); // 25
+
+// 获取原始定义
+String definition = engine.getDefinition("A2"); // "=A1*2+5"
+
+// 对于数值单元格
+String numDef = engine.getDefinition("A1");     // "10"
+```
+
+这个功能特别适用于：
+- **公式调试**: 查看单元格的原始公式
+- **数据导出**: 保存单元格的定义而非计算结果
+- **公式编辑**: 获取现有公式进行修改
+- **审计追踪**: 记录单元格的定义历史
 
 ### 依赖关系和联动计算
 
 ```java
 // 设置依赖链
-engine.setCellValue("X1", 10);
-engine.setCellValue("X2", "=X1*2");      // X2 = 20
-engine.setCellValue("X3", "=X2+X1");     // X3 = 30
+engine.set("X1", 10);
+engine.set("X2", "=X1*2");      // X2 = 20
+engine.set("X3", "=X2+X1");     // X3 = 30
 
 // 更新X1会自动触发X2和X3的重新计算
-engine.setCellValue("X1", 20);
+engine.set("X1", 20);
 // 现在: X2 = 40, X3 = 60
 ```
 
@@ -184,8 +213,8 @@ ExecutorService executor = Executors.newFixedThreadPool(4);
 for (int i = 0; i < 4; i++) {
     final int threadId = i;
     executor.submit(() -> {
-        engine.setCellValue("Thread" + threadId, threadId * 100);
-        engine.setCellValue("Result" + threadId, "=Thread" + threadId + "*2");
+        engine.set("Thread" + threadId, threadId * 100);
+        engine.set("Result" + threadId, "=Thread" + threadId + "*2");
     });
 }
 ```
@@ -202,9 +231,9 @@ double result1 = 0.1 + 0.2;  // 0.30000000000000004
 double result2 = 1.0 - 0.9;  // 0.09999999999999998
 
 // SimpleCalculateEngine 的高精度计算
-engine.setCellValue("A1", "=0.1+0.2");  // "0.3"
-engine.setCellValue("A2", "=1.0-0.9");  // "0.1"
-engine.setCellValue("A3", "=0.1*3");    // "0.3"
+engine.set("A1", "=0.1+0.2");  // "0.3"
+engine.set("A2", "=1.0-0.9");  // "0.1"
+engine.set("A3", "=0.1*3");    // "0.3"
 ```
 
 ### 智能格式化
@@ -212,9 +241,9 @@ engine.setCellValue("A3", "=0.1*3");    // "0.3"
 自动优化显示格式，去除无意义的尾随零：
 
 ```java
-engine.setCellValue("B1", "=10/2");     // "5"
-engine.setCellValue("B2", "=1.0000");   // "1"
-engine.setCellValue("B3", "=10/3");     // "3.3333333333" (保留必要的小数位)
+engine.set("B1", "=10/2");     // "5"
+engine.set("B2", "=1.0000");   // "1"
+engine.set("B3", "=10/3");     // "3.3333333333" (保留必要的小数位)
 ```
 
 ### 错误处理
@@ -236,19 +265,27 @@ engine.setCellValue("B3", "=10/3");     // "3.3333333333" (保留必要的小数
 #### 设置单元格值
 
 ```java
-void setCellValue(String cellId, String content)
-void setCellValue(String cellId, Number value)
-void setCellValue(String cellId, int value)
-void setCellValue(String cellId, long value)
-void setCellValue(String cellId, float value)
-void setCellValue(String cellId, double value)
+void set(String cellId, String content)
+void set(String cellId, Number value)
+void set(String cellId, int value)
+void set(String cellId, long value)
+void set(String cellId, float value)
+void set(String cellId, double value)
 ```
 
 #### 获取单元格值
 
 ```java
-String getCellValue(String cellId)           // 获取字符串结果
-BigDecimal getCellValueNumber(String cellId) // 获取数值结果
+String get(String cellId)           // 获取字符串结果
+BigDecimal getNumber(String cellId) // 获取数值结果
+String getDefinition(String cellId) // 获取单元格的原始定义字符串
+```
+
+#### 单元格管理
+
+```java
+void del(String cellId)      // 删除单元格
+boolean exist(String cellId) // 检查单元格是否存在
 ```
 
 #### 资源管理
