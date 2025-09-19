@@ -268,22 +268,22 @@ public class SimpleCalculateEngineTests {
     System.out.println("π = " + engine.getCellValue("π"));
 
     engine.setCellValue("J1", "=sin(π/2)");
-    System.out.println("sin(π/2) = " + engine.getCellValue("J1"));
+    System.out.println("sin(π/2) = " + engine.getCellValue("J1") + ", java sin(π/2) = " + Math.sin(Math.PI / 2));
     assertEquals(1.0, Double.parseDouble(engine.getCellValue("J1")));
     engine.setCellValue("J1_1", "=sin(90*π/180)");
-    System.out.println("sin(90°) = " + engine.getCellValue("J1_1"));
+    System.out.println("sin(90°) = " + engine.getCellValue("J1_1") + ", java sin(90°) = " + Math.sin(90 * Math.PI / 180));
     assertEquals(1.0, Double.parseDouble(engine.getCellValue("J1_1")));
 
     engine.setCellValue("J2", "=cos(0)");
-    System.out.println("cos(0) = " + engine.getCellValue("J2"));
+    System.out.println("cos(0) = " + engine.getCellValue("J2") + ", java cos(0) = " + Math.cos(0));
     assertEquals("1", engine.getCellValue("J2"));
 
     engine.setCellValue("J3", "=tan(π/4)");
-    System.out.println("tan(π/4) = " + engine.getCellValue("J3"));
+    System.out.println("tan(π/4) = " + engine.getCellValue("J3") + ", java tan(π/4) = " + Math.tan(Math.PI / 4));
     assertEquals(1.0, Double.parseDouble(engine.getCellValue("J3")), 1e-10);
 
     engine.setCellValue("J4", "=asin(1)");
-    System.out.println("asin(1) = " + engine.getCellValue("J4"));
+    System.out.println("asin(1) = " + engine.getCellValue("J4") + ", java asin(1) = " + Math.asin(1));
     assertEquals(Math.PI / 2, Double.parseDouble(engine.getCellValue("J4")), 1e-10);
   }
 
@@ -291,15 +291,15 @@ public class SimpleCalculateEngineTests {
   @DisplayName("测试对数函数")
   public void testLogarithmicFunctions() {
     engine.setCellValue("K1", "=log(exp(2))");
-    System.out.println("log(exp(2)) = " + engine.getCellValue("K1"));
+    System.out.println("log(exp(2)) = " + engine.getCellValue("K1") + ", java log(exp(2)) = " + Math.log(Math.exp(2)));
     assertEquals(2.0, Double.parseDouble(engine.getCellValue("K1")), 1e-10);
 
     engine.setCellValue("K2", "=log10(100)");
-    System.out.println("log10(100) = " + engine.getCellValue("K2"));
+    System.out.println("log10(100) = " + engine.getCellValue("K2") + ", java log10(100) = " + Math.log10(100));
     assertEquals("2", engine.getCellValue("K2"));
 
     engine.setCellValue("K3", "=exp(0)");
-    System.out.println("exp(0) = " + engine.getCellValue("K3"));
+    System.out.println("exp(0) = " + engine.getCellValue("K3") + ", java exp(0) = " + Math.exp(0));
     assertEquals("1", engine.getCellValue("K3"));
   }
 
