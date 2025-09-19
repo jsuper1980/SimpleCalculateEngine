@@ -31,9 +31,13 @@ import java.util.regex.Pattern;
  * - Java调用：jcall
  * 用法:
  * 1. 初始化引擎：SimpleCalculateEngine engine = new SimpleCalculateEngine();
- * 2. 设置单元格值：engine.setCellValue("A1", 10);
- * 3. 设置单元格公式：engine.setCellValue("A2", "=A1+1");
- * 4. 获取单元格值：String value = engine.getCellValue("A2"); // 结果为 "11"
+ * 2. 设置单元格值：engine.set("A1", 10);
+ * 3. 设置单元格公式：engine.set("A2", "=A1+1");
+ * 4. 获取单元格值：String value = engine.get("A2"); // 结果为 "11"
+ * 5. 获取单元格数值: BigDecimal value= engine.getNumber("A2"); // 结果为 11
+ * 6. 检查单元格是否存在：boolean exists = engine.cellExists("A2"); // 结果为 true
+ * 7. 获取单元格定义：String definition = engine.getDefinition("A2"); // 结果为 "=A1+1"
+ * 8. 清除单元格：engine.clear("A2"); // 单元格A2的内容和计算结果都会被清空
  * 
  * @author j² use TRAE
  * @version 1.0
@@ -164,7 +168,7 @@ public class SimpleCalculateEngine {
   /**
    * 设置单元格的值或公式
    */
-  public void setCellValue(String cellId, String content) {
+  public void set(String cellId, String content) {
     // 验证Cell ID
     validateCellId(cellId);
 
@@ -204,36 +208,118 @@ public class SimpleCalculateEngine {
    * 设置单元格的数值
    * 支持int、long、float、double等数值类型
    */
-  public void setCellValue(String cellId, Number value) {
-    setCellValue(cellId, String.valueOf(value));
+  public void set(String cellId, Number value) {
+    set(cellId, String.valueOf(value));
   }
 
   /**
    * 设置单元格的整数值
    */
-  public void setCellValue(String cellId, int value) {
-    setCellValue(cellId, String.valueOf(value));
+  public void set(String cellId, int value) {
+    set(cellId, String.valueOf(value));
   }
 
   /**
    * 设置单元格的长整数值
    */
-  public void setCellValue(String cellId, long value) {
-    setCellValue(cellId, String.valueOf(value));
+  public void set(String cellId, long value) {
+    set(cellId, String.valueOf(value));
   }
 
   /**
    * 设置单元格的浮点数值
    */
-  public void setCellValue(String cellId, float value) {
-    setCellValue(cellId, String.valueOf(value));
+  public void set(String cellId, float value) {
+    set(cellId, String.valueOf(value));
   }
 
   /**
    * 设置单元格的双精度浮点数值
    */
-  public void setCellValue(String cellId, double value) {
-    setCellValue(cellId, String.valueOf(value));
+  public void set(String cellId, double value) {
+    set(cellId, String.valueOf(value));
+  }
+
+  /**
+   * 删除单元格定义
+   * 删除指定的单元格及其所有相关数据，包括内容、计算结果和依赖关系
+   * 
+   * @param cellId 要删除的单元格ID
+   * @throws IllegalArgumentException 如果cellId为null或空字符串
+   */
+  public void del(String cellId) {
+    if (cellId == null || cellId.trim().isEmpty()) {
+      throw new IllegalArgumentException("Cell ID不能为空");
+    }
+
+    writeLock.lock();
+    try {
+      // 检查单元格是否存在
+      Cell cell = cells.get(cellId);
+      if (cell == null) {
+        // 单元格不存在，直接返回（幂等操作）
+        return;
+      }
+
+      // 1. 移除该单元格的所有依赖关系
+      removeDependencies(cellId);
+
+      // 2. 从cells映射中移除单元格
+      cells.remove(cellId);
+
+      // 3. 清理该单元格作为其他单元格依赖项的记录
+      Set<String> cellsThatDependOnThis = dependents.get(cellId);
+      if (cellsThatDependOnThis != null) {
+        // 遍历所有依赖于被删除单元格的单元格
+        for (String dependentCellId : new HashSet<>(cellsThatDependOnThis)) {
+          Cell dependentCell = cells.get(dependentCellId);
+          if (dependentCell != null) {
+            // 从依赖单元格的依赖集合中移除被删除的单元格
+            Set<String> deps = dependencies.get(dependentCellId);
+            if (deps != null) {
+              deps.remove(cellId);
+            }
+
+            // 更新依赖单元格的依赖关系
+            Set<String> cellDeps = dependentCell.getDependencies();
+            cellDeps.remove(cellId);
+            dependentCell.setDependencies(cellDeps);
+          }
+        }
+        // 清除正向依赖表中的记录
+        dependents.remove(cellId);
+      }
+
+      // 4. 重新计算所有依赖于被删除单元格的单元格
+      // 这些单元格现在会将被删除的单元格引用视为0或产生错误
+      if (cellsThatDependOnThis != null && !cellsThatDependOnThis.isEmpty()) {
+        for (String dependentCellId : cellsThatDependOnThis) {
+          calculateDependentCells(dependentCellId);
+        }
+      }
+
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
+  /**
+   * 检查单元格是否存在
+   * 
+   * @param cellId 单元格ID
+   * @return 如果单元格存在返回true，否则返回false
+   */
+  public boolean exist(String cellId) {
+    if (cellId == null || cellId.trim().isEmpty()) {
+      return false;
+    }
+
+    readLock.lock();
+    try {
+      return cells.containsKey(cellId);
+    } finally {
+      readLock.unlock();
+    }
   }
 
   /**
@@ -258,7 +344,7 @@ public class SimpleCalculateEngine {
    * @param cellId 单元格ID
    * @return 单元格的计算结果，若单元格不存在则返回null，计算错误则返回"#ERROR#"
    */
-  public String getCellValue(String cellId) {
+  public String get(String cellId) {
     readLock.lock();
     try {
       Cell cell = cells.get(cellId);
@@ -274,15 +360,31 @@ public class SimpleCalculateEngine {
    * @param cellId 单元格ID
    * @return 单元格的数值计算结果，若单元格不存在或计算错误则返回null
    */
-  public BigDecimal getCellValueNumber(String cellId) {
+  public BigDecimal getNumber(String cellId) {
     try {
-      String value = getCellValue(cellId);
+      String value = get(cellId);
       if (value == null || ERROR.equals(value)) {
         return null;
       }
       return new BigDecimal(value);
     } catch (NumberFormatException e) {
       return null;
+    }
+  }
+
+  /**
+   * 获取单元格的定义字符串
+   * 
+   * @param cellId 单元格ID
+   * @return 单元格的原始定义内容，若单元格不存在则返回null
+   */
+  public String getDefinition(String cellId) {
+    readLock.lock();
+    try {
+      Cell cell = cells.get(cellId);
+      return cell != null ? cell.getContent() : null;
+    } finally {
+      readLock.unlock();
     }
   }
 
@@ -537,7 +639,7 @@ public class SimpleCalculateEngine {
 
     while (matcher.find()) {
       String ref = matcher.group(); // 保持原始大小写，支持中文等字符
-      String value = getCellValue(ref);
+      String value = get(ref);
 
       // 处理未设置值的单元格，视为0
       if (value == null || value.isEmpty() || ERROR.equals(value)) {
@@ -645,7 +747,7 @@ public class SimpleCalculateEngine {
 
               while (cellMatcher.find()) {
                 String ref = cellMatcher.group();
-                String value = getCellValue(ref);
+                String value = get(ref);
 
                 // 处理未设置值的单元格，视为0
                 if (value == null || value.isEmpty() || ERROR.equals(value)) {
@@ -749,7 +851,7 @@ public class SimpleCalculateEngine {
 
         while (cellMatcher.find()) {
           String ref = cellMatcher.group();
-          String value = getCellValue(ref);
+          String value = get(ref);
 
           // 处理未设置值的单元格，视为0
           if (value == null || value.isEmpty() || ERROR.equals(value)) {
@@ -921,12 +1023,12 @@ public class SimpleCalculateEngine {
         String right = expression.substring(i + 1);
         BigDecimal leftVal = evaluateSimpleExpressionWithoutFunctions(left);
         BigDecimal rightVal = evaluateSimpleExpressionWithoutFunctions(right);
-        
+
         // 检查除零错误
         if ((c == '/' || c == '\\' || c == '%') && rightVal.compareTo(BigDecimal.ZERO) == 0) {
           throw new RuntimeException("除零错误");
         }
-        
+
         switch (c) {
           case '*':
             return leftVal.multiply(rightVal);
