@@ -702,6 +702,103 @@ public class SimpleCalculateEngineTests {
   // ==================== 性能测试用例 ====================
 
   @Test
+  @DisplayName("性能测试 - 联动计算")
+  public void testLinkageCalculation() {
+
+    // 设置基础值
+    engine.set("CHAIN_1", 1);
+
+    // 构建1000层联动计算链
+    for (int i = 2; i <= 1000; i++) {
+      engine.set("CHAIN_" + i, "=CHAIN_" + (i - 1) + "*2");
+    }
+
+    // 触发计算并验证结果
+    System.out.println("1000 层联动计算最终结果: " + engine.get("CHAIN_1000"));
+
+    // 修改基础值，测试联动更新性能
+    long startTime = System.nanoTime();
+    engine.set("CHAIN_1", 2);
+    System.out.println("修改基础值后10000层联动计算结果: " + engine.get("CHAIN_1000"));
+
+    long endTime = System.nanoTime();
+    System.out.println("1000 层联动计算总耗时: " + (endTime - startTime) / 1_000_000 + "ms");
+  }
+
+  @Test
+  @DisplayName("测试联动计算")
+  public void testLinkedCalculation() {
+    long startTime = System.nanoTime();
+    // 创建一个简单的联动计算网络
+    engine.set("BASE", 100); // 基础值
+    engine.set("RATE", 0.1); // 利率
+    engine.set("DAYS", 30); // 天数
+
+    // 设置联动公式
+    engine.set("INTEREST", "=BASE*RATE*DAYS/365"); // 利息
+    engine.set("TOTAL", "=BASE+INTEREST"); // 本息总额
+    engine.set("TAX", "=INTEREST*0.2"); // 利息税(20%)
+    engine.set("FINAL", "=TOTAL-TAX"); // 最终金额
+
+    // 验证初始计算结果
+    System.out.println("\n===== 联动计算初始状态 =====");
+    System.out.println("本金(BASE) = " + engine.get("BASE"));
+    System.out.println("利率(RATE) = " + engine.get("RATE"));
+    System.out.println("天数(DAYS) = " + engine.get("DAYS"));
+    System.out.println("利息(INTEREST) = " + engine.get("INTEREST"));
+    System.out.println("总额(TOTAL) = " + engine.get("TOTAL"));
+    System.out.println("税金(TAX) = " + engine.get("TAX"));
+    System.out.println("最终金额(FINAL) = " + engine.get("FINAL"));
+
+    long endTime = System.nanoTime();
+    System.out.println("计算耗时: " + (endTime - startTime) / 1_000_000 + " 毫秒");
+
+    // 验证计算准确性
+    assertEquals(0.82191781, engine.getNumber("INTEREST").doubleValue(), 0.00000001); // 100*0.1*30/365
+    assertEquals(100.82191781, engine.getNumber("TOTAL").doubleValue(), 0.00000001); // 100+0.82191781
+    assertEquals(0.16438356, engine.getNumber("TAX").doubleValue(), 0.00000001); // 0.82191781*0.2
+    assertEquals(100.65753425, engine.getNumber("FINAL").doubleValue(), 0.00000001); // 100.82191781-0.16438356
+
+    // 修改基础值，测试联动更新
+    startTime = System.nanoTime();
+    engine.set("BASE", 200);
+
+    System.out.println("\n===== 修改本金后的状态 =====");
+    System.out.println("本金(BASE) = " + engine.get("BASE"));
+    System.out.println("利息(INTEREST) = " + engine.get("INTEREST"));
+    System.out.println("总额(TOTAL) = " + engine.get("TOTAL"));
+    System.out.println("税金(TAX) = " + engine.get("TAX"));
+    System.out.println("最终金额(FINAL) = " + engine.get("FINAL"));
+    endTime = System.nanoTime();
+    System.out.println("计算耗时: " + (endTime - startTime) / 1_000_000 + " 毫秒");
+
+    // 验证联动更新的准确性
+    assertEquals(1.64383562, engine.getNumber("INTEREST").doubleValue(), 0.00000001); // 200*0.1*30/365
+    assertEquals(201.64383562, engine.getNumber("TOTAL").doubleValue(), 0.00000001); // 200+1.64383562
+    assertEquals(0.32876712, engine.getNumber("TAX").doubleValue(), 0.00000001); // 1.64383562*0.2
+    assertEquals(201.3150685, engine.getNumber("FINAL").doubleValue(), 0.00000001); // 201.64383562-0.32876712
+
+    // 修改利率，测试联动更新
+    startTime = System.nanoTime();
+    engine.set("RATE", 0.15);
+
+    System.out.println("\n===== 修改利率后的状态 =====");
+    System.out.println("利率(RATE) = " + engine.get("RATE"));
+    System.out.println("利息(INTEREST) = " + engine.get("INTEREST"));
+    System.out.println("总额(TOTAL) = " + engine.get("TOTAL"));
+    System.out.println("税金(TAX) = " + engine.get("TAX"));
+    System.out.println("最终金额(FINAL) = " + engine.get("FINAL"));
+    endTime = System.nanoTime();
+    System.out.println("计算耗时: " + (endTime - startTime) / 1_000_000 + " 毫秒");
+
+    // 验证联动更新的准确性
+    assertEquals(2.46575342, engine.getNumber("INTEREST").doubleValue(), 0.00000001); // 200*0.15*30/365
+    assertEquals(202.46575342, engine.getNumber("TOTAL").doubleValue(), 0.00000001); // 200+2.46575342
+    assertEquals(0.49315068, engine.getNumber("TAX").doubleValue(), 0.00000001); // 2.46575342*0.2
+    assertEquals(201.97260274, engine.getNumber("FINAL").doubleValue(), 0.00000001); // 202.46575342-0.49315068
+  }
+
+  @Test
   @DisplayName("性能测试 - 大量计算和复杂公式")
   public void testPerformance() {
     System.out.println("\n========== 性能测试开始 ==========");
